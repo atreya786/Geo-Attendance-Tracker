@@ -1,14 +1,21 @@
-import { Text, View } from "react-native";
-import React, { Component } from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { Provider, useSelector } from "react-redux";
+import { store } from "./src/redux/store";
+import AuthNavigator from "./src/navigation/AuthNavigator";
+import AppNavigator from "./src/navigation/AppNavigator";
 
-export class App extends Component {
-  render() {
-    return (
-      <View>
-        <Text>App</Text>
-      </View>
-    );
-  }
+function RootNavigator() {
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
+  return isAuthenticated ? <AppNavigator /> : <AuthNavigator />;
 }
 
-export default App;
+export default function App() {
+  return (
+    <Provider store={store}>
+      <NavigationContainer>
+        <RootNavigator />
+      </NavigationContainer>
+    </Provider>
+  );
+}
