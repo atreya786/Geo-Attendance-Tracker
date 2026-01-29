@@ -22,6 +22,7 @@ export default function SignupScreen() {
       });
 
       Alert.alert("Success", "Account created successfully. Please login.");
+      navigation.navigate("Login");
     } catch (error) {
       Alert.alert(
         "Signup failed",

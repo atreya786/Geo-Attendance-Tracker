@@ -1,23 +1,82 @@
-import { View, Text, FlatList } from "react-native";
+import { View } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { api } from "../services/api";
 
 export default function HistoryScreen() {
   const user = useSelector((state) => state.auth.user);
-  const [data, setData] = useState([]);
+  const [markedDates, setMarkedDates] = useState({});
 
   useEffect(() => {
-    api.get(`/attendance/history/${user.id}`).then((res) => setData(res.data));
+    api.get(`/attendance/history/${user.id}`).then((res) => {
+      const presentDates = res.data.map((item) => item.attendance_date);
+
+      buildCalendarMarks(presentDates);
+    });
   }, []);
 
+  const buildCalendarMarks = (presentDates) => {
+    const today = new Date();
+    const marks = {};
+
+    for (let i = 0; i < 30; i++) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+
+      const dateStr = date.toISOString().split("T")[0];
+      const day = date.getDay(); // 0 = Sunday
+
+      // 🔵 TODAY (if not present)
+      if (dateStr === today.toISOString().split("T")[0]) {
+        marks[dateStr] = hollowStyle("#2563eb");
+        continue;
+      }
+
+      // 🟢 PRESENT (highest priority)
+      if (presentDates.includes(dateStr)) {
+        marks[dateStr] = hollowStyle("#16a34a");
+        continue;
+      }
+
+      // 🟡 SUNDAY
+      if (day === 0) {
+        marks[dateStr] = hollowStyle("#facc15");
+        continue;
+      }
+
+      // 🔴 ABSENT (past days)
+      marks[dateStr] = hollowStyle("#dc2626");
+    }
+
+    setMarkedDates(marks);
+  };
+
+  // 🔵 Helper for hollow circle style
+  const hollowStyle = (color) => ({
+    customStyles: {
+      container: {
+        borderWidth: 2,
+        borderColor: color,
+        borderRadius: 20,
+      },
+      text: {
+        color: color,
+        fontWeight: "bold",
+      },
+    },
+  });
+
   return (
-    <FlatList
-      data={data}
-      keyExtractor={(item, index) => index.toString()}
-      renderItem={({ item }) => (
-        <Text style={{ padding: 12 }}>{item.date} - Present</Text>
-      )}
-    />
+    <View style={{ flex: 1 }}>
+      <Calendar
+        markingType="custom"
+        markedDates={markedDates}
+        theme={{
+          todayTextColor: "#2563eb",
+          arrowColor: "#2563eb",
+        }}
+      />
+    </View>
   );
 }
