@@ -1,12 +1,31 @@
-import { Text, View, TextInput, Pressable, Alert } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TextInput,
+  Pressable,
+  Alert,
+} from "react-native";
 import { useState } from "react";
 import { api } from "../services/api";
 import { useNavigation } from "@react-navigation/native";
+import { Dropdown } from "react-native-element-dropdown";
 
 export default function SignupScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
+  const [name, setName] = useState("");
+  const [role, setRole] = useState(null);
+  const roleData = [
+    { label: "Employee", value: "employee" },
+    { label: "Worker", value: "worker" },
+    { label: "Contractor", value: "contractor" },
+    { label: "Intern", value: "intern" },
+    { label: "Apprentice", value: "apprentice" },
+  ];
+
+  const [isFocus, setIsFocus] = useState(false);
   const navigation = useNavigation();
 
   const handleSignup = async () => {
@@ -18,6 +37,8 @@ export default function SignupScreen() {
     try {
       await api.post("/auth/register", {
         email,
+        name,
+        role,
         password,
       });
 
@@ -51,9 +72,41 @@ export default function SignupScreen() {
         autoCapitalize="none"
         style={{
           borderWidth: 1,
-          padding: 10,
-          marginBottom: 12,
+          padding: 12,
+          marginBottom: 6,
           borderRadius: 6,
+        }}
+      />
+
+      <Text style={styles.label}>Name</Text>
+      <TextInput
+        placeholder="e.g - John Doe"
+        value={name}
+        onChangeText={setName}
+        style={{
+          borderWidth: 1,
+          padding: 12,
+          marginBottom: 6,
+          borderRadius: 6,
+        }}
+      />
+
+      <Text style={styles.label}>Role</Text>
+      <Dropdown
+        style={[styles.dropdown, isFocus && { borderColor: "blue" }]}
+        placeholderStyle={styles.placeholderStyle}
+        selectedTextStyle={styles.selectedTextStyle}
+        data={roleData}
+        maxHeight={300}
+        labelField="label"
+        valueField="value"
+        placeholder={!isFocus ? "Select role" : "..."}
+        value={role}
+        onFocus={() => setIsFocus(true)}
+        onBlur={() => setIsFocus(false)}
+        onChange={(item) => {
+          setRole(item.value);
+          setIsFocus(false);
         }}
       />
 
@@ -65,8 +118,8 @@ export default function SignupScreen() {
         secureTextEntry
         style={{
           borderWidth: 1,
-          padding: 10,
-          marginBottom: 12,
+          padding: 12,
+          marginBottom: 6,
           borderRadius: 6,
         }}
       />
@@ -79,7 +132,8 @@ export default function SignupScreen() {
         secureTextEntry
         style={{
           borderWidth: 1,
-          padding: 10,
+          padding: 12,
+          marginBottom: 6,
           borderRadius: 6,
         }}
       />
@@ -105,3 +159,17 @@ export default function SignupScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  dropdown: {
+    height: 50,
+    borderColor: "black",
+    borderWidth: 1,
+    borderRadius: 8,
+    marginBottom: 6,
+    paddingHorizontal: 8,
+  },
+  label: { paddingTop: 5, fontSize: 16 },
+  placeholderStyle: { fontSize: 16, color: "gray" },
+  selectedTextStyle: { fontSize: 16 },
+});

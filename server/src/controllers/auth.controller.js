@@ -3,15 +3,15 @@ import { hashPassword, comparePassword } from "../utils/password.js";
 
 // SIGNUP
 export const registerUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, name, role, password } = req.body;
 
   try {
     const hashed = await hashPassword(password);
 
-    await db.query("INSERT INTO users (email, password) VALUES (?, ?)", [
-      email,
-      hashed,
-    ]);
+    await db.query(
+      "INSERT INTO users (email, name, role, password) VALUES (?, ?, ?, ?)",
+      [email, name, role, hashed],
+    );
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -45,6 +45,8 @@ export const loginUser = async (req, res) => {
     res.json({
       user: {
         id: user.id,
+        name: user.name,
+        role: user.role,
         email: user.email,
       },
     });
