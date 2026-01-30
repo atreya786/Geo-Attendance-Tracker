@@ -3,26 +3,30 @@ import * as Location from "expo-location";
 import { useDispatch, useSelector } from "react-redux";
 import { api } from "../services/api";
 import { useNavigation } from "@react-navigation/native";
-import { logout } from "../redux/slices/authSlice";
+import { clearUser } from "../redux/slices/userSlice";
 import { useEffect, useState } from "react";
+import { setTodayStatus } from "../redux/slices/attendanceSlice";
 
 export default function AttendanceScreen() {
-  const user = useSelector((state) => state.auth.user);
+  const { user } = useSelector((state) => state.user.user);
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const [isPresentToday, setIsPresentToday] = useState(false);
-
+const isPresentToday = useSelector(
+  (state) => state.attendance.isPresentToday
+);
+  // today attendance from backend
   useEffect(() => {
-    api.get(`/attendance/today/${user.id}`).then((res) => {
-      setIsPresentToday(res.data.isPresent);
-    });
+    api
+      .get(`/attendance/today/${user.id}`)
+      .then((res) => dispatch(setTodayStatus(res.data.isPresent)))
+      .catch(() => {});
   }, []);
 
   const markAttendance = async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission denied");
+      Alert.alert("Location permission denied");
       return;
     }
 
@@ -71,11 +75,11 @@ export default function AttendanceScreen() {
           borderRadius: 8,
         }}
       >
-        <Text style={{ color: "#000", fontSize: 16 }}>View History</Text>
+        <Text>View History</Text>
       </Pressable>
 
       <Pressable
-        onPress={() => dispatch(logout())}
+        onPress={() => dispatch(clearUser())}
         style={{
           marginTop: 20,
           backgroundColor: "#e93838",
@@ -83,7 +87,7 @@ export default function AttendanceScreen() {
           borderRadius: 8,
         }}
       >
-        <Text style={{ color: "#000", fontSize: 16 }}>Logout</Text>
+        <Text style={{ color: "#fff" }}>Logout</Text>
       </Pressable>
     </View>
   );

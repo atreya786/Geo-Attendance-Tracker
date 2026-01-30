@@ -1,4 +1,4 @@
-import { db } from "../config/db.js";
+import { poolPromise, sql } from "../config/db.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
 
 // SIGNUP
@@ -6,19 +6,34 @@ export const registerUser = async (req, res) => {
   const { email, name, role, password } = req.body;
 
   try {
-    const hashed = await hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
-    await db.query(
-      "INSERT INTO users (email, name, role, password) VALUES (?, ?, ?, ?)",
-      [email, name, role, hashed],
-    );
+    const pool = await poolPromise;
 
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (error) {
-    if (error.code === "ER_DUP_ENTRY") {
-      return res.status(400).json({ message: "Email already exists" });
+    // check existing user
+    const existing = await pool
+      .request()
+      .input("email", sql.VarChar, email)
+      .query("SELECT id FROM users WHERE email = @email");
+
+    if (existing.recordset.length > 0) {
+      return res.status(400).json({ message: "User already exists" });
     }
-    res.status(500).json({ message: "Registration failed" });
+
+    await pool
+      .request()
+      .input("email", sql.VarChar, email)
+      .input("name", sql.VarChar, name)
+      .input("role", sql.VarChar, role)
+      .input("password", sql.VarChar, hashedPassword).query(`
+        INSERT INTO users (email, name, role, password)
+        VALUES (@email, @name, @role, @password)
+      `);
+
+    res.json({ message: "Signup successful" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -27,30 +42,30 @@ export const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await db.query("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
+    const pool = await poolPromise;
 
-    if (rows.length === 0) {
+    const result = await pool
+      .request()
+      .input("email", sql.VarChar, email)
+      .query("SELECT * FROM users WHERE email = @email");
+
+    if (result.recordset.length === 0) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const user = rows[0];
-    const isMatch = await comparePassword(password, user.password);
+    const user = result.recordset[0];
+    const match = await comparePassword(password, user.password);
 
-    if (!isMatch) {
+    if (!match) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    res.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Login failed" });
+    // never return password
+    delete user.password;
+
+    res.json({ user });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };

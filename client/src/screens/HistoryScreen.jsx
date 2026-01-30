@@ -10,7 +10,12 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     api.get(`/attendance/history/${user.id}`).then((res) => {
-      const presentDates = res.data.map((item) => item.attendance_date);
+      const presentDates = res.data.map((item) => ({
+        date: item.attendance_date,
+        isPresent: item.is_present,
+      }));
+
+      alert(JSON.stringify(presentDates));
 
       buildCalendarMarks(presentDates);
     });
@@ -27,15 +32,15 @@ export default function HistoryScreen() {
       const dateStr = date.toISOString().split("T")[0];
       const day = date.getDay(); // 0 = Sunday
 
-      // 🔵 TODAY (if not present)
-      if (dateStr === today.toISOString().split("T")[0]) {
-        marks[dateStr] = hollowStyle("#2563eb");
+      // 🟢 PRESENT (highest priority)
+      if (presentDates.map((d) => d.date === dateStr && d.isPresent === 1)) {
+        marks[dateStr] = hollowStyle("#16a34a");
         continue;
       }
 
-      // 🟢 PRESENT (highest priority)
-      if (presentDates.includes(dateStr)) {
-        marks[dateStr] = hollowStyle("#16a34a");
+      // 🔵 TODAY (if not present)
+      if (dateStr === today.toISOString().split("T")[0]) {
+        marks[dateStr] = hollowStyle("#2563eb");
         continue;
       }
 
