@@ -9,7 +9,7 @@ const ALLOWED_RADIUS = 100; // meters
 export const markAttendance = async (req, res) => {
   const { userId, latitude, longitude } = req.body;
 
-  // 🔒 GEO-FENCE CHECK
+  // GEO-FENCE CHECK
   const distance = getDistanceInMeters(
     latitude,
     longitude,
