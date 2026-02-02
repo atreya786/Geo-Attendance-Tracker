@@ -1,4 +1,4 @@
-import { poolPromise, sql } from "../config/db.js";
+import Attendance from "../models/Attendance.js"; // Import the model
 import { getDistanceInMeters } from "../utils/geo.js";
 
 // OFFICE LOCATION
@@ -6,10 +6,17 @@ const OFFICE_LAT = 18.7684826;
 const OFFICE_LNG = 82.9193406;
 const ALLOWED_RADIUS = 100; // meters
 
+// Helper: Get today's date at midnight (00:00:00) to mimic SQL 'DATE' type
+const getTodayNormalized = () => {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
 export const markAttendance = async (req, res) => {
   const { userId, latitude, longitude } = req.body;
 
-  // GEO-FENCE CHECK
+  // 1. GEO-FENCE CHECK (Logic remains identical)
   const distance = getDistanceInMeters(
     latitude,
     longitude,
@@ -24,28 +31,18 @@ export const markAttendance = async (req, res) => {
   }
 
   try {
-    const pool = await poolPromise;
-
-    await pool
-      .request()
-      .input("userId", sql.Int, userId)
-      .input("lat", sql.Decimal(10, 8), latitude)
-      .input("lng", sql.Decimal(11, 8), longitude).query(`
-        INSERT INTO attendance
-        (user_id, attendance_date, attendance_time, is_present, latitude, longitude)
-        VALUES (
-          @userId,
-          CAST(GETDATE() AS DATE),
-          CAST(GETDATE() AS TIME),
-          1,
-          @lat,
-          @lng
-        )
-      `);
+    await Attendance.create({
+      userId,
+      latitude,
+      longitude,
+      isPresent: true,
+      date: getTodayNormalized(),
+      timestamp: new Date(),
+    });
 
     res.json({ message: "Attendance marked successfully" });
   } catch (err) {
-    if (err.number === 2627) {
+    if (err.code === 11000) {
       return res.status(400).json({ message: "Attendance already marked" });
     }
     console.error(err);
@@ -57,19 +54,21 @@ export const getAttendanceHistory = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const pool = await poolPromise;
+    const history = await Attendance.find({ userId }).sort({ date: -1 }).lean();
 
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-        SELECT 
-          CONVERT(char(10), attendance_date, 105) AS attendance_date,
-          attendance_time,
-          is_present
-        FROM attendance
-        WHERE user_id = @userId
-        ORDER BY attendance_date DESC
-      `);
+    const formattedHistory = history.map((record) => {
+      const dateObj = new Date(record.timestamp);
 
-    res.json(result.recordset);
+      return {
+        attendance_date: dateObj
+          .toLocaleDateString("en-GB")
+          .replace(/\//g, "-"),
+        attendance_time: dateObj.toLocaleTimeString("en-GB"),
+        is_present: record.isPresent,
+      };
+    });
+
+    res.json(formattedHistory);
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
@@ -80,17 +79,13 @@ export const getTodayAttendanceStatus = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const pool = await poolPromise;
-
-    const result = await pool.request().input("userId", sql.Int, userId).query(`
-        SELECT is_present
-        FROM attendance
-        WHERE user_id = @userId
-        AND attendance_date = CAST(GETDATE() AS DATE)
-      `);
+    const record = await Attendance.findOne({
+      userId,
+      date: getTodayNormalized(),
+    });
 
     res.json({
-      isPresent: result.recordset.length > 0,
+      isPresent: !!record,
     });
   } catch (err) {
     console.error(err);
