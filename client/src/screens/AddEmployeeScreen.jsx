@@ -10,13 +10,15 @@ import { useState } from "react";
 import { api } from "../services/api";
 import { useNavigation } from "@react-navigation/native";
 import { Dropdown } from "react-native-element-dropdown";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import this
 
-export default function SignupScreen() {
+export default function AddEmployeeScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState(null);
+
   const roleData = [
     { label: "Employee", value: "employee" },
     { label: "Worker", value: "worker" },
@@ -28,25 +30,52 @@ export default function SignupScreen() {
   const [isFocus, setIsFocus] = useState(false);
   const navigation = useNavigation();
 
-  const handleSignup = async () => {
+  const handleCreateUser = async () => {
     if (password !== verifyPassword) {
       Alert.alert("Error", "Passwords do not match");
       return;
     }
+    if (!role) {
+      Alert.alert("Error", "Please select a role");
+      return;
+    }
 
     try {
-      await api.post("/auth/register", {
-        email,
-        name,
-        role,
-        password,
-      });
+      const userStr = await AsyncStorage.getItem("user");
+      const userData = userStr ? JSON.parse(userStr) : null;
 
-      Alert.alert("Success", "Account created successfully. Please login.");
-      navigation.navigate("Login");
+      const token = userData?.token || userData?.user?.token;
+
+      if (!token) {
+        Alert.alert("Error", "No token found. Please re-login.");
+        return;
+      }
+
+      await api.post(
+        "/auth/register",
+        {
+          email,
+          name,
+          role,
+          password,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      Alert.alert("Success", "New employee account created successfully!");
+      setEmail("");
+      setName("");
+      setPassword("");
+      setVerifyPassword("");
+      setRole(null);
     } catch (error) {
+      console.log(error);
       Alert.alert(
-        "Signup failed",
+        "Failed",
         error?.response?.data?.message || "Something went wrong",
       );
     }
@@ -58,24 +87,27 @@ export default function SignupScreen() {
         flex: 1,
         justifyContent: "center",
         padding: 20,
+        backgroundColor: "#fff",
       }}
     >
-      <Text style={{ fontSize: 24, textAlign: "center", marginBottom: 20 }}>
-        Sign Up
+      <Text
+        style={{
+          fontSize: 24,
+          textAlign: "center",
+          marginBottom: 20,
+          fontWeight: "bold",
+        }}
+      >
+        Add New Employee
       </Text>
 
-      <Text>Email</Text>
+      <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="e.g - xyz@gmail.com"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
-        style={{
-          borderWidth: 1,
-          padding: 12,
-          marginBottom: 6,
-          borderRadius: 6,
-        }}
+        style={styles.input}
       />
 
       <Text style={styles.label}>Name</Text>
@@ -83,12 +115,7 @@ export default function SignupScreen() {
         placeholder="e.g - John Doe"
         value={name}
         onChangeText={setName}
-        style={{
-          borderWidth: 1,
-          padding: 12,
-          marginBottom: 6,
-          borderRadius: 6,
-        }}
+        style={styles.input}
       />
 
       <Text style={styles.label}>Role</Text>
@@ -110,36 +137,26 @@ export default function SignupScreen() {
         }}
       />
 
-      <Text>Password</Text>
+      <Text style={styles.label}>Password</Text>
       <TextInput
         placeholder="e.g - User@123"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
-        style={{
-          borderWidth: 1,
-          padding: 12,
-          marginBottom: 6,
-          borderRadius: 6,
-        }}
+        style={styles.input}
       />
 
-      <Text>Confirm Password</Text>
+      <Text style={styles.label}>Confirm Password</Text>
       <TextInput
         placeholder="e.g - User@123"
         value={verifyPassword}
         onChangeText={setVerifyPassword}
         secureTextEntry
-        style={{
-          borderWidth: 1,
-          padding: 12,
-          marginBottom: 6,
-          borderRadius: 6,
-        }}
+        style={styles.input}
       />
 
       <Pressable
-        onPress={handleSignup}
+        onPress={handleCreateUser}
         style={{
           backgroundColor: "#16a34a",
           padding: 14,
@@ -147,15 +164,19 @@ export default function SignupScreen() {
           borderRadius: 6,
         }}
       >
-        <Text style={{ color: "#fff", textAlign: "center", fontSize: 16 }}>
+        <Text
+          style={{
+            color: "#fff",
+            textAlign: "center",
+            fontSize: 16,
+            fontWeight: "600",
+          }}
+        >
           Create Account
         </Text>
       </Pressable>
-      <Pressable onPress={() => navigation.navigate("Login")}>
-        <Text style={{ textAlign: "center", marginTop: 16 }}>
-          Already have an account? Click here to Login
-        </Text>
-      </Pressable>
+
+      {/* Removed the "Already have an account" link since user is already logged in */}
     </View>
   );
 }
@@ -163,13 +184,25 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   dropdown: {
     height: 50,
-    borderColor: "black",
+    borderColor: "gray",
     borderWidth: 1,
-    borderRadius: 8,
-    marginBottom: 6,
+    borderRadius: 6,
+    marginBottom: 12,
     paddingHorizontal: 8,
   },
-  label: { paddingTop: 5, fontSize: 16 },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    marginBottom: 6,
+    marginTop: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "gray",
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 6,
+  },
   placeholderStyle: { fontSize: 16, color: "gray" },
   selectedTextStyle: { fontSize: 16 },
 });

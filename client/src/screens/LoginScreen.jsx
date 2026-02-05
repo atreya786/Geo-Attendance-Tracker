@@ -10,15 +10,15 @@ import { useDispatch } from "react-redux";
 import { loginSuccess } from "../redux/slices/authSlice";
 import { api } from "../services/api";
 import { useState } from "react";
-import { useNavigation } from "@react-navigation/native";
 import { setUser } from "../redux/slices/userSlice";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
 
 export default function LoginScreen() {
   const dispatch = useDispatch();
-  const [email, setEmail] = useState("");
-  
-  const [password, setPassword] = useState("");
   const navigation = useNavigation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleLogin = async () => {
     try {
@@ -27,9 +27,16 @@ export default function LoginScreen() {
         password,
       });
 
-      dispatch(loginSuccess(res.data.user));
-      dispatch(setUser(res.data.user));
+      const { token, user } = res.data;
+
+      await AsyncStorage.setItem("user", JSON.stringify(res.data));
+
+      dispatch(loginSuccess(user));
+      dispatch(setUser(user));
+
+      Alert.alert("Success", "Logged in successfully!");
     } catch (error) {
+      console.log(error);
       Alert.alert(
         "Login failed",
         error?.response?.data?.message || "Something went wrong",
@@ -88,11 +95,6 @@ export default function LoginScreen() {
       >
         <Text style={{ color: "#fff", textAlign: "center", fontSize: 16 }}>
           Login
-        </Text>
-      </Pressable>
-      <Pressable onPress={() => navigation.navigate("Signup")}>
-        <Text style={{ textAlign: "center", marginTop: 16 }}>
-          Don&apos;t have an account? Click here to Sign up
         </Text>
       </Pressable>
     </View>

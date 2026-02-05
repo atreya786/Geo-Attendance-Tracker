@@ -156,7 +156,7 @@ export default function AttendanceScreen() {
 
           <Pressable
             onPress={fetchCurrentLocation}
-            style={[styles.gridButton, { backgroundColor: "#2563eb" }]}
+            style={[styles.gridButton, { backgroundColor: "#3b82f6" }]}
           >
             <Text style={styles.buttonText}>Fetch Location</Text>
           </Pressable>
@@ -165,9 +165,9 @@ export default function AttendanceScreen() {
         <View style={styles.row}>
           <Pressable
             onPress={() => navigation.navigate("HistoryScreen")}
-            style={[styles.gridButton, { backgroundColor: "lightblue" }]}
+            style={[styles.gridButton, { backgroundColor: "#f59e0b" }]}
           >
-            <Text style={[styles.buttonText, { color: "#000" }]}>
+            <Text style={[styles.buttonText]}>
               View History
             </Text>
           </Pressable>
@@ -178,6 +178,15 @@ export default function AttendanceScreen() {
           >
             <Text style={styles.buttonText}>Logout</Text>
           </Pressable>
+
+          {user?.role === "admin" && (
+            <Pressable
+              onPress={() => navigation.navigate("AddEmployeeScreen")}
+              style={[styles.gridButton, { backgroundColor: "#10b981" }]}
+            >
+              <Text style={styles.buttonText}>Add New User</Text>
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -218,7 +227,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: "#fff",
+    color: "#000000",
     fontSize: 15,
     fontWeight: "600",
   },
