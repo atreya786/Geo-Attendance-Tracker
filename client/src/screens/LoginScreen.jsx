@@ -59,6 +59,7 @@ export default function LoginScreen() {
       <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="e.g - xyz@gmail.com"
+        placeholderTextColor="#444"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -73,6 +74,7 @@ export default function LoginScreen() {
       <Text style={styles.label}>Password</Text>
       <TextInput
         placeholder="e.g - User@123"
+        placeholderTextColor="#444"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -111,6 +113,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   label: { paddingTop: 5, fontSize: 16 },
-  placeholderStyle: { fontSize: 16, color: "gray" },
+  placeholderStyle: { fontSize: 16, color: "#444" },
   selectedTextStyle: { fontSize: 16 },
 });

@@ -104,6 +104,7 @@ export default function AddEmployeeScreen() {
       <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="e.g - xyz@gmail.com"
+        placeholderTextColor="#444"
         value={email}
         onChangeText={setEmail}
         autoCapitalize="none"
@@ -113,6 +114,7 @@ export default function AddEmployeeScreen() {
       <Text style={styles.label}>Name</Text>
       <TextInput
         placeholder="e.g - John Doe"
+        placeholderTextColor="#444"
         value={name}
         onChangeText={setName}
         style={styles.input}
@@ -140,6 +142,7 @@ export default function AddEmployeeScreen() {
       <Text style={styles.label}>Password</Text>
       <TextInput
         placeholder="e.g - User@123"
+        placeholderTextColor="#444"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -149,6 +152,7 @@ export default function AddEmployeeScreen() {
       <Text style={styles.label}>Confirm Password</Text>
       <TextInput
         placeholder="e.g - User@123"
+        placeholderTextColor="#444"
         value={verifyPassword}
         onChangeText={setVerifyPassword}
         secureTextEntry
@@ -203,6 +207,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderRadius: 6,
   },
-  placeholderStyle: { fontSize: 16, color: "gray" },
+  placeholderStyle: { fontSize: 16, color: "#555" },
   selectedTextStyle: { fontSize: 16 },
 });

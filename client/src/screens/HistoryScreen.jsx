@@ -166,6 +166,7 @@ export default function HistoryScreen() {
           <TextInput
             style={styles.input}
             placeholder="Enter User Email"
+            placeholderTextColor="#444"
             value={searchEmail}
             onChangeText={setSearchEmail}
             autoCapitalize="none"
@@ -174,6 +175,7 @@ export default function HistoryScreen() {
             <TextInput
               style={[styles.input, { flex: 1, marginRight: 5 }]}
               placeholder="Month (1-12)"
+              placeholderTextColor="#444"
               keyboardType="numeric"
               value={String(searchMonth)}
               onChangeText={(t) => setSearchMonth(Number(t))}
@@ -181,6 +183,7 @@ export default function HistoryScreen() {
             <TextInput
               style={[styles.input, { flex: 1, marginLeft: 5 }]}
               placeholder="Year (YYYY)"
+              placeholderTextColor="#444"
               keyboardType="numeric"
               value={String(searchYear)}
               onChangeText={(t) => setSearchYear(Number(t))}
@@ -223,7 +226,7 @@ export default function HistoryScreen() {
             <LegendItem color="#16a34a" label="Present" />
             <LegendItem color="#dc2626" label="Absent" />
             <LegendItem color="#ca8a04" label="Sunday" />
-            <LegendItem color="#2563eb" label="Today" />
+            <LegendItem color="#2563eb" label="Today (if not present)" />
           </View>
         </View>
       )}
