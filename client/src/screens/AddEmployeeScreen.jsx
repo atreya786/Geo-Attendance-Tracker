@@ -14,17 +14,20 @@ import AsyncStorage from "@react-native-async-storage/async-storage"; // Import 
 
 export default function AddEmployeeScreen() {
   const [email, setEmail] = useState("");
+  const [number, setNumber] = useState("");
   const [password, setPassword] = useState("");
   const [verifyPassword, setVerifyPassword] = useState("");
   const [name, setName] = useState("");
+  const [department, setDepartment] = useState("");
   const [role, setRole] = useState(null);
 
   const roleData = [
-    { label: "Employee", value: "employee" },
-    { label: "Worker", value: "worker" },
-    { label: "Contractor", value: "contractor" },
-    { label: "Intern", value: "intern" },
-    { label: "Apprentice", value: "apprentice" },
+    { label: "Employee", value: "Employee" },
+    { label: "Worker", value: "Worker" },
+    { label: "Contractor", value: "Contractor" },
+    { label: "Intern", value: "Intern" },
+    { label: "Apprentice", value: "Apprentice" },
+    { label: "Admin", value: "Admin" },
   ];
 
   const [isFocus, setIsFocus] = useState(false);
@@ -55,7 +58,9 @@ export default function AddEmployeeScreen() {
         "/auth/register",
         {
           email,
+          number,
           name,
+          department,
           role,
           password,
         },
@@ -68,10 +73,12 @@ export default function AddEmployeeScreen() {
 
       Alert.alert("Success", "New employee account created successfully!");
       setEmail("");
+      setNumber("");
       setName("");
       setPassword("");
       setVerifyPassword("");
       setRole(null);
+      setDepartment("");
     } catch (error) {
       console.log(error);
       Alert.alert(
@@ -90,17 +97,6 @@ export default function AddEmployeeScreen() {
         backgroundColor: "#fff",
       }}
     >
-      <Text
-        style={{
-          fontSize: 24,
-          textAlign: "center",
-          marginBottom: 20,
-          fontWeight: "bold",
-        }}
-      >
-        Add New Employee
-      </Text>
-
       <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="e.g - xyz@gmail.com"
@@ -111,12 +107,31 @@ export default function AddEmployeeScreen() {
         style={styles.input}
       />
 
+      <Text style={styles.label}>Phone Number</Text>
+      <TextInput
+        placeholder="e.g - 1234567890"
+        placeholderTextColor="#444"
+        value={number}
+        onChangeText={setNumber}
+        keyboardType="phone-pad"
+        style={styles.input}
+      />
+
       <Text style={styles.label}>Name</Text>
       <TextInput
         placeholder="e.g - John Doe"
         placeholderTextColor="#444"
         value={name}
         onChangeText={setName}
+        style={styles.input}
+      />
+
+      <Text style={styles.label}>Department</Text>
+      <TextInput
+        placeholder="e.g - Sales"
+        placeholderTextColor="#444"
+        value={department}
+        onChangeText={setDepartment}
         style={styles.input}
       />
 

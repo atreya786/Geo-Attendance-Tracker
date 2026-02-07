@@ -1,6 +1,6 @@
 import User from "../models/User.js";
 import { hashPassword, comparePassword } from "../utils/password.js";
-import jwt from "jsonwebtoken"; // 1. IMPORT THIS
+import jwt from "jsonwebtoken";
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -10,10 +10,10 @@ const generateToken = (id) => {
 
 // SIGNUP (Register)
 export const registerUser = async (req, res) => {
-  const { email, name, role, password } = req.body;
+  const { email, number, name, role, password, department } = req.body;
 
   try {
-    const existing = await User.findOne({ email });
+    const existing = await User.findOne({ $or: [{ email }, { number }] });
 
     if (existing) {
       return res.status(400).json({ message: "User already exists" });
@@ -23,8 +23,10 @@ export const registerUser = async (req, res) => {
 
     await User.create({
       email,
+      number,
       name,
       role,
+      department,
       password: hashedPassword,
     });
 
@@ -37,10 +39,10 @@ export const registerUser = async (req, res) => {
 
 // LOGIN
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, number, password } = req.body;
 
   try {
-    const user = await User.findOne({ email }).lean();
+    const user = await User.findOne({ $or: [{ email }, { number }] }).lean();
 
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
