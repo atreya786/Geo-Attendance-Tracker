@@ -12,7 +12,6 @@ import { api } from "../services/api";
 import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { setTodayStatus } from "../redux/slices/attendanceSlice";
-import { logout } from "../redux/slices/authSlice";
 import * as Location from "expo-location";
 
 export default function AttendanceScreen() {
@@ -160,33 +159,6 @@ export default function AttendanceScreen() {
           >
             <Text style={styles.buttonText}>Fetch Location</Text>
           </Pressable>
-        </View>
-
-        <View style={styles.row}>
-          <Pressable
-            onPress={() => navigation.navigate("HistoryScreen")}
-            style={[styles.gridButton, { backgroundColor: "#f59e0b" }]}
-          >
-            <Text style={[styles.buttonText]}>
-              View History
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => dispatch(logout())}
-            style={[styles.gridButton, { backgroundColor: "#e93838" }]}
-          >
-            <Text style={styles.buttonText}>Logout</Text>
-          </Pressable>
-
-          {user?.role === "admin" && (
-            <Pressable
-              onPress={() => navigation.navigate("AddEmployeeScreen")}
-              style={[styles.gridButton, { backgroundColor: "#10b981" }]}
-            >
-              <Text style={styles.buttonText}>Add New User</Text>
-            </Pressable>
-          )}
         </View>
       </View>
     </View>
