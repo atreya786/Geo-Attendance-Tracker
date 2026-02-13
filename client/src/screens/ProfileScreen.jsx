@@ -48,17 +48,14 @@ const ProfileScreen = ({ navigation }) => {
       </View>
     );
   }
-
+  
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: user?.avatarUrl || "https://i.pravatar.cc/300" }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: user?.profileImage }} style={styles.avatar} />
             <View style={styles.statusBadge} />
           </View>
           <Text style={styles.name}>{user?.name || "User Name"}</Text>
@@ -67,7 +64,6 @@ const ProfileScreen = ({ navigation }) => {
           </Text>
         </View>
 
-        {/* Info Section - Removed Icons */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Details</Text>
 
@@ -77,7 +73,6 @@ const ProfileScreen = ({ navigation }) => {
           <InfoRow label="Role" value={user?.role || "Unknown"} />
         </View>
 
-        {/* Actions - Removed Icons */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.actionButton} onPress={handleLogout}>
             <Text style={[styles.actionText, { color: "#EF4444" }]}>

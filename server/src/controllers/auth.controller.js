@@ -10,7 +10,8 @@ const generateToken = (id) => {
 
 // SIGNUP (Register)
 export const registerUser = async (req, res) => {
-  const { email, number, name, role, password, department } = req.body;
+  const { email, number, name, role, password, department, profileImage } =
+    req.body;
 
   try {
     const existing = await User.findOne({ $or: [{ email }, { number }] });
@@ -28,6 +29,7 @@ export const registerUser = async (req, res) => {
       role,
       department,
       password: hashedPassword,
+      profileImage: profileImage || "",
     });
 
     res.json({ message: "Signup successful" });

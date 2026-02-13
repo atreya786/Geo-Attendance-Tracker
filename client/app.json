@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DemoApp",
-    "slug": "DemoApp",
+    "name": "GeoTracker",
+    "slug": "geo-tracker",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.atreya786.geotracker"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.atreya786.DemoApp"
+      "package": "com.atreya786.geotracker"
     },
     "web": {
       "favicon": "./assets/favicon.png"

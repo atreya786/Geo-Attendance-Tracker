@@ -5,12 +5,15 @@ import {
   TextInput,
   Pressable,
   Alert,
+  Image,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { useState } from "react";
 import { api } from "../services/api";
-import { useNavigation } from "@react-navigation/native";
 import { Dropdown } from "react-native-element-dropdown";
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Import this
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
 
 export default function AddEmployeeScreen() {
   const [email, setEmail] = useState("");
@@ -20,6 +23,12 @@ export default function AddEmployeeScreen() {
   const [name, setName] = useState("");
   const [department, setDepartment] = useState("");
   const [role, setRole] = useState(null);
+
+  const [image, setImage] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  const CLOUD_NAME = "dtq5ul7zb";
+  const UPLOAD_PRESET = "geo_tracker_unsigned";
 
   const roleData = [
     { label: "Employee", value: "Employee" },
@@ -31,7 +40,63 @@ export default function AddEmployeeScreen() {
   ];
 
   const [isFocus, setIsFocus] = useState(false);
-  const navigation = useNavigation();
+
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Denied", "Camera roll permissions are needed.");
+      return;
+    }
+
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      const asset = result.assets[0];
+      if (asset.fileSize && asset.fileSize > 102400) {
+        Alert.alert(
+          "File too large",
+          "Please upload an image smaller than 100KB.",
+        );
+        return;
+      }
+      setImage(asset.uri);
+    }
+  };
+
+  // 2. Upload to Cloudinary
+  const uploadToCloudinary = async (uri) => {
+    if (!uri) return null;
+
+    const formData = new FormData();
+    formData.append("file", {
+      uri,
+      type: "image/jpeg",
+      name: "profile.jpg",
+    });
+    formData.append("upload_preset", UPLOAD_PRESET);
+    formData.append("cloud_name", CLOUD_NAME);
+
+    try {
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
+      const data = await res.json();
+      return data.secure_url;
+    } catch (err) {
+      console.log("Cloudinary Upload Error:", err);
+      Alert.alert("Error", "Failed to upload image.");
+      return null;
+    }
+  };
 
   const handleCreateUser = async () => {
     if (password !== verifyPassword) {
@@ -43,15 +108,26 @@ export default function AddEmployeeScreen() {
       return;
     }
 
+    setUploading(true);
+
     try {
       const userStr = await AsyncStorage.getItem("user");
       const userData = userStr ? JSON.parse(userStr) : null;
-
       const token = userData?.token || userData?.user?.token;
 
       if (!token) {
         Alert.alert("Error", "No token found. Please re-login.");
+        setUploading(false);
         return;
+      }
+
+      let profileImageUrl = "";
+      if (image) {
+        profileImageUrl = await uploadToCloudinary(image);
+        if (!profileImageUrl) {
+          setUploading(false);
+          return;
+        }
       }
 
       await api.post(
@@ -63,11 +139,10 @@ export default function AddEmployeeScreen() {
           department,
           role,
           password,
+          profileImage: profileImageUrl,
         },
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         },
       );
 
@@ -79,24 +154,34 @@ export default function AddEmployeeScreen() {
       setVerifyPassword("");
       setRole(null);
       setDepartment("");
+      setImage(null);
     } catch (error) {
       console.log(error);
       Alert.alert(
         "Failed",
         error?.response?.data?.message || "Something went wrong",
       );
+    } finally {
+      setUploading(false);
     }
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        padding: 20,
-        backgroundColor: "#fff",
-      }}
-    >
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Image Picker */}
+      <View style={{ alignItems: "center", marginBottom: 20 }}>
+        <Pressable onPress={pickImage} style={styles.imagePicker}>
+          {image ? (
+            <Image source={{ uri: image }} style={styles.profileImage} />
+          ) : (
+            <View style={{ alignItems: "center" }}>
+              <Text style={{ color: "#666" }}>+ Photo</Text>
+              <Text style={{ fontSize: 10, color: "#aaa" }}>(Max 100KB)</Text>
+            </View>
+          )}
+        </Pressable>
+      </View>
+
       <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="e.g - xyz@gmail.com"
@@ -176,31 +261,40 @@ export default function AddEmployeeScreen() {
 
       <Pressable
         onPress={handleCreateUser}
+        disabled={uploading}
         style={{
-          backgroundColor: "#16a34a",
+          backgroundColor: uploading ? "#9ca3af" : "#16a34a",
           padding: 14,
           marginTop: 20,
           borderRadius: 6,
         }}
       >
-        <Text
-          style={{
-            color: "#fff",
-            textAlign: "center",
-            fontSize: 16,
-            fontWeight: "600",
-          }}
-        >
-          Create Account
-        </Text>
+        {uploading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text
+            style={{
+              color: "#fff",
+              textAlign: "center",
+              fontSize: 16,
+              fontWeight: "600",
+            }}
+          >
+            Create Account
+          </Text>
+        )}
       </Pressable>
-
-      {/* Removed the "Already have an account" link since user is already logged in */}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    justifyContent: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
   dropdown: {
     height: 50,
     borderColor: "gray",
@@ -224,4 +318,19 @@ const styles = StyleSheet.create({
   },
   placeholderStyle: { fontSize: 16, color: "#555" },
   selectedTextStyle: { fontSize: 16 },
+  imagePicker: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#e5e7eb",
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+  },
+  profileImage: {
+    width: "100%",
+    height: "100%",
+  },
 });

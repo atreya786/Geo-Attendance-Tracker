@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   department: { type: String, required: true },
   role: { type: String, required: true, default: "user" },
+  profileImage: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now },
 });
 
