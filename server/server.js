@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import authRoutes from "./src/routes/auth.routes.js";
 import attendanceRoutes from "./src/routes/attendance.routes.js";
+import userRoutes from "./src/routes/user.routes.js";
 import { connectToDB } from "./src/config/db.js";
 
 dotenv.config();
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use("/auth", authRoutes);
 app.use("/attendance", attendanceRoutes);
+app.use("/users", userRoutes);
 
 const PORT = process.env.PORT || 5000;
 

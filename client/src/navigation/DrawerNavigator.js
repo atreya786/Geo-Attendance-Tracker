@@ -8,6 +8,7 @@ import AttendanceScreen from "../screens/AttendanceScreen";
 import HistoryScreen from "../screens/HistoryScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import AddEmployeeScreen from "../screens/AddEmployeeScreen";
+import EmployeeScreen from "../screens/EmployeeScreen";
 import { useSelector } from "react-redux";
 
 const Drawer = createDrawerNavigator();
@@ -71,6 +72,17 @@ const DrawerNavigator = () => {
           options={{
             drawerIcon: ({ color }) => (
               <MaterialIcons name="person-add" size={40} color={color} />
+            ),
+          }}
+        />
+      )}
+      {user?.role === "admin" && (
+        <Drawer.Screen
+          name="Employee Directory"
+          component={EmployeeScreen}
+          options={{
+            drawerIcon: ({ color }) => (
+              <MaterialIcons name="people" size={40} color={color} />
             ),
           }}
         />
