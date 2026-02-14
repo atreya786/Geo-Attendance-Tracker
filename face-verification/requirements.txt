@@ -3,5 +3,6 @@ uvicorn
 python-multipart
 numpy
 cmake
-dlib
+dlib-bin
 face_recognition
+setuptools
