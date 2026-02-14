@@ -13,6 +13,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import { setTodayStatus } from "../redux/slices/attendanceSlice";
 import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
 
 export default function AttendanceScreen() {
   const user = useSelector((state) => state.auth.user);
@@ -63,10 +64,14 @@ export default function AttendanceScreen() {
 
   // Check today attendance
   useEffect(() => {
+    // Fetch status of attendance
     api
       .get(`/attendance/today/${user.id}`)
       .then((res) => dispatch(setTodayStatus(res.data.isPresent)))
       .catch(() => {});
+
+    // Fetch initial location
+    fetchCurrentLocation();
   }, []);
 
   // Get current location ONCE
@@ -91,24 +96,64 @@ export default function AttendanceScreen() {
 
   const markAttendance = async () => {
     if (!coords) {
-      Alert.alert("Location not available", "Please fetch your location first");
+      Alert.alert("Location missing", "Please fetch your location first.");
       return;
     }
 
+    // 1. Request Camera Permissions
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission denied",
+        "We need camera access to verify your identity.",
+      );
+      return;
+    }
+
+    // 2. Launch Camera to take a Selfie
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1], // Square aspect is better for face recognition
+      quality: 0.5, // Reduce quality to speed up upload
+    });
+
+    if (result.canceled) return;
+
+    const selfieUri = result.assets[0].uri;
+
     try {
-      const res = await api.post("/attendance/mark", {
-        userId: user.id,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
+      setLoading(true);
+
+      // 3. Prepare Multipart Form Data
+      const formData = new FormData();
+      formData.append("userId", user.id);
+      formData.append("latitude", coords.latitude.toString());
+      formData.append("longitude", coords.longitude.toString());
+
+      // Append the Image
+      formData.append("selfie", {
+        uri: selfieUri,
+        name: "selfie.jpg",
+        type: "image/jpeg",
       });
 
-      Alert.alert(res.data.message);
+      // 4. Call API (Must set headers for multipart)
+      const res = await api.post("/attendance/mark", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      Alert.alert("Success", res.data.message);
       dispatch(setTodayStatus(true));
     } catch (error) {
+      console.error(error);
       Alert.alert(
-        "Error",
-        error?.response?.data?.message || "Attendance failed",
+        "Verification Failed",
+        error?.response?.data?.message || "Check your internet and try again",
       );
+    } finally {
+      setLoading(false);
     }
   };
 

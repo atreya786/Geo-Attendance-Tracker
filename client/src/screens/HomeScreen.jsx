@@ -1,23 +1,98 @@
 import { useNavigation } from "@react-navigation/native";
-import React from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  RefreshControl,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSelector } from "react-redux";
+import { api } from "../services/api";
 
 const HomeScreen = () => {
   const todayDate = new Date().toDateString();
   const user = useSelector((state) => state.auth.user);
   const navigate = useNavigation();
 
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    attendancePercentage: 0,
+    onTimeDays: 0,
+    totalWorkingDays: 0,
+  });
+
+  const processAttendanceData = (data, targetMonth, targetYear) => {
+    const yearsData = data.years || data || {};
+    const yearRecords = yearsData[String(targetYear)];
+
+    if (!yearRecords) {
+      console.log("No records found for year:", targetYear);
+      setStats({ attendancePercentage: 0, onTimeDays: 0, totalWorkingDays: 0 });
+      return;
+    }
+
+    const dbMonth = targetMonth + 1;
+
+    const monthKeySimple = String(dbMonth);
+    const monthKeyPadded = String(dbMonth).padStart(2, "0");
+
+    const monthRecords =
+      yearRecords[monthKeySimple] || yearRecords[monthKeyPadded] || [];
+
+    const totalDaysRecorded = monthRecords.length;
+
+    const presentCount = monthRecords.filter(
+      (r) => r.status === "Present" || r.status === "On Time",
+    ).length;
+
+    const onTimeCount = monthRecords.filter(
+      (r) => r.status === "On Time",
+    ).length;
+
+    const percentage =
+      totalDaysRecorded > 0
+        ? Math.round((presentCount / totalDaysRecorded) * 100)
+        : 0;
+
+    setStats({
+      attendancePercentage: percentage,
+      onTimeDays: onTimeCount,
+      totalWorkingDays: totalDaysRecorded,
+    });
+  };
+
+  const fetchHistory = useCallback(async () => {
+    if (!user?.id) return;
+
+    setLoading(true);
+    const today = new Date();
+    try {
+      const res = await api.get(`/attendance/history/${user.id}`);
+      processAttendanceData(res.data, today.getMonth(), today.getFullYear());
+      // console.log(res);
+    } catch (error) {
+      console.error("Fetch Error:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
   return (
     <SafeAreaView style={styles.container} edges={["bottom", "left", "right"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={loading} onRefresh={fetchHistory} />
+        }
+      >
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>Good Morning,</Text>
           <Text style={styles.username}>{user?.name || "User"} 👋</Text>
@@ -41,22 +116,33 @@ const HomeScreen = () => {
 
         {/* Quick Stats Grid */}
         <Text style={styles.sectionTitle}>Overview</Text>
-        <View style={styles.grid}>
-          <View style={[styles.gridItem, { backgroundColor: "#E0F2FE" }]}>
-            <Text style={[styles.gridLabel, { color: "#0284C7" }]}>
-              Attendance
-            </Text>
-            <Text style={styles.gridValue}>92%</Text>
-          </View>
-          <View style={[styles.gridItem, { backgroundColor: "#F0FDF4" }]}>
-            <Text style={[styles.gridLabel, { color: "#16A34A" }]}>
-              On Time
-            </Text>
-            <Text style={styles.gridValue}>22 Days</Text>
-          </View>
-        </View>
 
-        {/* Recent Activity List */}
+        {loading && stats.totalWorkingDays === 0 ? (
+          <ActivityIndicator
+            size="large"
+            color="#4F46E5"
+            style={{ marginBottom: 20 }}
+          />
+        ) : (
+          <View style={styles.grid}>
+            <View style={[styles.gridItem, { backgroundColor: "#E0F2FE" }]}>
+              <Text style={[styles.gridLabel, { color: "#0284C7" }]}>
+                Attendance
+              </Text>
+              <Text style={styles.gridValue}>
+                {stats.attendancePercentage}%
+              </Text>
+            </View>
+
+            <View style={[styles.gridItem, { backgroundColor: "#F0FDF4" }]}>
+              <Text style={[styles.gridLabel, { color: "#16A34A" }]}>
+                On Time
+              </Text>
+              <Text style={styles.gridValue}>{stats.onTimeDays} Days</Text>
+            </View>
+          </View>
+        )}
+
         <Text style={styles.sectionTitle}>Recent Activity</Text>
         <View style={styles.activityList}>
           <ActivityItem
@@ -97,7 +183,7 @@ const ActivityItem = ({ status, time, date, color }) => (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F8F9FA", // Clean Light Gray
     paddingHorizontal: 20,
   },
   greetingContainer: {
@@ -119,6 +205,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 10,
+  },
+  cardContent: {
+    zIndex: 1,
   },
   cardTitle: {
     fontSize: 22,
@@ -160,9 +249,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 16,
     justifyContent: "center",
+    alignItems: "center",
   },
   gridLabel: { fontSize: 14, fontWeight: "600", marginBottom: 8 },
   gridValue: { fontSize: 24, fontWeight: "bold", color: "#1F2937" },
+
   activityList: { backgroundColor: "#fff", borderRadius: 16, padding: 10 },
   activityItem: {
     flexDirection: "row",

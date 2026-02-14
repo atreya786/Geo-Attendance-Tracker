@@ -170,6 +170,9 @@ export default function AddEmployeeScreen() {
     <ScrollView contentContainerStyle={styles.container}>
       {/* Image Picker */}
       <View style={{ alignItems: "center", marginBottom: 20 }}>
+        <Text style={{ fontSize: 16, fontWeight: "500", marginBottom: 10 }}>
+          Upload Profile Image
+        </Text>
         <Pressable onPress={pickImage} style={styles.imagePicker}>
           {image ? (
             <Image source={{ uri: image }} style={styles.profileImage} />

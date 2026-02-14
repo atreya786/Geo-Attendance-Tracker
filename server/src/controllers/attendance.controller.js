@@ -1,74 +1,123 @@
 import Attendance from "../models/Attendance.js";
 import { getDistanceInMeters } from "../utils/geo.js";
 import User from "../models/User.js";
+import axios from "axios";          
+import FormData from "form-data";   
 
 const OFFICE_LAT = 18.7684826;
 const OFFICE_LNG = 82.9193406;
 const ALLOWED_RADIUS = 100;
 
-export const markAttendance = async (req, res) => {
-  const { userId, latitude, longitude } = req.body;
+const verifyFace = async (selfieBuffer, profileImageUrl) => {
+  try {
+    const formData = new FormData();
+    const response = await axios.get(profileImageUrl, {
+      responseType: "stream",
+    });
 
-  // 1. Geo-Fence Check
-  const distance = getDistanceInMeters(
-    latitude,
-    longitude,
-    OFFICE_LAT,
-    OFFICE_LNG,
-  );
-  if (distance > ALLOWED_RADIUS) {
+    formData.append("source_image", response.data, "profile.jpg");
+    formData.append("target_image", selfieBuffer, "selfie.jpg");
+
+    const pythonRes = await axios.post(
+      "http://127.0.0.1:8000/verify",
+      formData,
+      {
+        headers: { ...formData.getHeaders() },
+      },
+    );
+
+    return pythonRes.data;
+  } catch (error) {
+    console.error("Python Service Error:", error.message);
+    throw new Error("Face verification service is offline");
+  }
+};
+
+export const markAttendance = async (req, res) => {
+  // 1. Get selfie from multer (assuming you use upload.single('selfie'))
+  // and other data from req.body
+  const { userId, latitude, longitude } = req.body;
+  const selfieFile = req.file;
+
+  if (!selfieFile) {
     return res
-      .status(403)
-      .json({ message: "You are outside the allowed office area" });
+      .status(400)
+      .json({ message: "Selfie is required for verification" });
   }
 
-  // 2. Date Setup
-  const now = new Date();
-  const currentYear = now.getFullYear().toString(); // "2026"
-  const currentMonth = (now.getMonth() + 1).toString(); // "2" (or "02")
-  const currentDay = now.getDate(); // 5
-
-  const newRecord = {
-    day: currentDay,
-    time: now.toLocaleTimeString(), // "10:30:00 AM"
-    status: "Present",
-    latitude,
-    longitude,
-    timestamp: now,
-  };
-
   try {
-    let attendanceDoc = await Attendance.findOne({ userId });
+    // 2. Geo-Fence Check
+    const distance = getDistanceInMeters(
+      latitude,
+      longitude,
+      OFFICE_LAT,
+      OFFICE_LNG,
+    );
+    if (distance > ALLOWED_RADIUS) {
+      return res
+        .status(403)
+        .json({ message: "You are outside the allowed office area" });
+    }
 
+    // 3. Get User for Profile Image
+    const user = await User.findById(userId);
+    if (!user || !user.profileImage) {
+      return res.status(400).json({ message: "User profile image not found" });
+    }
+
+    // 4. FACE VERIFICATION (The Python Call)
+    const faceResult = await verifyFace(selfieFile.buffer, user.profileImage);
+
+    if (!faceResult.match) {
+      return res.status(401).json({
+        message: "Face verification failed. Please try again.",
+      });
+    }
+
+    // 5. Date & Record Setup (If verified)
+    const now = new Date();
+    const currentYear = now.getFullYear().toString();
+    const currentMonth = (now.getMonth() + 1).toString();
+    const currentDay = now.getDate();
+
+    const newRecord = {
+      day: currentDay,
+      time: now.toLocaleTimeString(),
+      status: "Present",
+      latitude,
+      longitude,
+      timestamp: now,
+      similarity: faceResult.similarity_score, // Optional: save how accurate the match was
+    };
+
+    // 6. Database Update
+    let attendanceDoc = await Attendance.findOne({ userId });
     if (!attendanceDoc) {
       attendanceDoc = new Attendance({ userId, years: {} });
     }
 
-    if (!attendanceDoc.years[currentYear]) {
+    // Ensure nesting exists
+    if (!attendanceDoc.years[currentYear])
       attendanceDoc.years[currentYear] = {};
-    }
     if (!attendanceDoc.years[currentYear][currentMonth]) {
       attendanceDoc.years[currentYear][currentMonth] = [];
     }
 
     const monthRecords = attendanceDoc.years[currentYear][currentMonth];
-    const alreadyMarked = monthRecords.find((r) => r.day === currentDay);
-
-    if (alreadyMarked) {
+    if (monthRecords.find((r) => r.day === currentDay)) {
       return res
         .status(400)
         .json({ message: "Attendance already marked for today" });
     }
+
     attendanceDoc.years[currentYear][currentMonth].push(newRecord);
-
     attendanceDoc.markModified("years");
-
     await attendanceDoc.save();
 
-    res.json({ message: "Attendance marked successfully" });
+    res.json({ message: "Face verified! Attendance marked successfully." });
   } catch (err) {
-    console.error("Attendance Error:", err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Attendance Error:", err.message);
+    res.status(500).json({ message: err.message || "Server error" });
   }
 };
 
