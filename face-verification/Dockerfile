@@ -1,18 +1,28 @@
-# Use a heavier base image that has pre-built packages
-FROM python:3.11-bookworm
+# 1. Use Python 3.9 (Better support for pre-built dlib wheels)
+FROM python:3.9-slim
 
-# Install dlib from system (no compilation needed)
+# 2. Install CMake and compilers (Required just in case, but lightweight)
 RUN apt-get update && apt-get install -y \
-    python3-dlib \
     cmake \
+    g++ \
+    make \
+    libopenblas-dev \
+    libx11-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# 3. Work Directory
 WORKDIR /app
+
+# 4. Copy requirements
 COPY requirements.txt .
 
-# Remove dlib from requirements.txt before running this, 
-# or use a separate requirements file that doesn't list dlib.
-RUN pip install --no-cache-dir -r requirements.txt
+# 5. Install Python dependencies
+# We assume requirements.txt contains 'dlib' (standard name)
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
 
+# 6. Copy app code
 COPY . .
+
+# 7. Run
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
