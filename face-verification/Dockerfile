@@ -1,28 +1,16 @@
-# 1. Use Python 3.9 (Better support for pre-built dlib wheels)
-FROM python:3.9-slim
+# 1. Use a community image that ALREADY has dlib + face_recognition installed.
+# This skips the compilation step entirely.
+FROM animcogn/face_recognition:cpu
 
-# 2. Install CMake and compilers (Required just in case, but lightweight)
-RUN apt-get update && apt-get install -y \
-    cmake \
-    g++ \
-    make \
-    libopenblas-dev \
-    libx11-dev \
-    && rm -rf /var/lib/apt/lists/*
+# 2. Install only the web server libraries (fast & light)
+# We do NOT use requirements.txt here to avoid accidentally triggering a rebuild.
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart
 
-# 3. Work Directory
+# 3. Set work directory
 WORKDIR /app
 
-# 4. Copy requirements
-COPY requirements.txt .
-
-# 5. Install Python dependencies
-# We assume requirements.txt contains 'dlib' (standard name)
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# 6. Copy app code
+# 4. Copy your code
 COPY . .
 
-# 7. Run
+# 5. Run the server
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
