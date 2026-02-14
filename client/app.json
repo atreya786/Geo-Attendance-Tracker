@@ -2,7 +2,7 @@
   "expo": {
     "name": "GeoTracker",
     "slug": "geo-tracker",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -27,16 +27,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "cc0d651d-af1f-4c5c-b6bf-3ddd96aa74d5"
-      }
-    },
     "runtimeVersion": {
       "policy": "appVersion"
     },
+    "extra": {
+      "eas": {
+        "projectId": "371eea3c-d6f4-4bee-b61d-8cd5725f58c6"
+      }
+    },
     "updates": {
-      "url": "https://u.expo.dev/cc0d651d-af1f-4c5c-b6bf-3ddd96aa74d5"
+      "url": "https://u.expo.dev/371eea3c-d6f4-4bee-b61d-8cd5725f58c6"
     }
   }
 }

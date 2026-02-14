@@ -1,8 +1,8 @@
 import Attendance from "../models/Attendance.js";
 import { getDistanceInMeters } from "../utils/geo.js";
 import User from "../models/User.js";
-import axios from "axios";          
-import FormData from "form-data";   
+import axios from "axios";
+import FormData from "form-data";
 
 const OFFICE_LAT = 18.7684826;
 const OFFICE_LNG = 82.9193406;
@@ -19,7 +19,7 @@ const verifyFace = async (selfieBuffer, profileImageUrl) => {
     formData.append("target_image", selfieBuffer, "selfie.jpg");
 
     const pythonRes = await axios.post(
-      "http://127.0.0.1:8000/verify",
+      process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8000/verify",
       formData,
       {
         headers: { ...formData.getHeaders() },
