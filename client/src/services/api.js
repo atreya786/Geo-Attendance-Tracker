@@ -4,7 +4,7 @@ const PROD_URL = "https://geo-attendance-tracker.onrender.com";
 const DEV_URL = "http://192.168.1.40:5000";
 
 export const api = axios.create({
-  baseURL: PROD_URL,
+  baseURL: DEV_URL,
   headers: {
     "Content-Type": "application/json",
   },

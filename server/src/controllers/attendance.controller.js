@@ -19,10 +19,14 @@ const verifyFace = async (selfieBuffer, profileImageUrl) => {
     formData.append("target_image", selfieBuffer, "selfie.jpg");
 
     const pythonRes = await axios.post(
-      process.env.PYTHON_SERVICE_URL || "http://127.0.0.1:8000/verify",
+      // process.env.PYTHON_SERVICE_URL
+      // ,
+      //  ||
+      "http://127.0.0.1:8000/verify",
       formData,
       {
         headers: { ...formData.getHeaders() },
+        timeout: 60000, // 1 minutes timeout for slow processing
       },
     );
 
