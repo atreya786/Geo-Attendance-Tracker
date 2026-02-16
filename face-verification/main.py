@@ -20,7 +20,6 @@ def get_face_encoding(image_bytes):
         # 3. CRITICAL OPTIMIZATION: Resize the image
         # Phone cameras take 4000x3000px images. 
         # We resize to 0.25 (1/4th) scale to save RAM.
-        # This prevents the "502 Bad Gateway" (Out of Memory) crash.
         small_image = cv2.resize(image, (0, 0), fx=0.25, fy=0.25)
 
         # 4. Convert BGR (OpenCV format) to RGB (face_recognition format)
