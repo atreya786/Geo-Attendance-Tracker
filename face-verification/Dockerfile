@@ -4,7 +4,7 @@ FROM animcogn/face_recognition:cpu
 
 # 2. Install only the web server libraries (fast & light)
 # We do NOT use requirements.txt here to avoid accidentally triggering a rebuild.
-RUN pip install --no-cache-dir fastapi uvicorn python-multipart
+RUN pip install --no-cache-dir fastapi uvicorn python-multipart opencv-python-headless
 
 # 3. Set work directory
 WORKDIR /app
